@@ -1,0 +1,13 @@
+# Bun configuration file
+# Reference: https://bun.sh/docs/runtime/bunfig
+
+[install]
+# Install optional dependencies
+optional = true
+
+# Trust scripts in these packages
+trustedDependencies = ["sharp"]
+
+[run]
+# Enable hot reloading by default (when applicable)
+# watch = true
