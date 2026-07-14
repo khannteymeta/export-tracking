@@ -127,6 +127,7 @@ export const customers = pgTable('customers', {
   email: text('email').unique(),
   phone: text('phone'),
   address: text('address'),
+  isActive: boolean('is_active').default(true).notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
