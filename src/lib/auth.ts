@@ -7,6 +7,7 @@ import { betterAuth } from 'better-auth';
 // Custom Drizzle-backed database adapter for BetterAuth to manage tables directly
 const customDrizzleAdapter = {
   id: 'custom-drizzle-adapter',
+  provider: 'postgres', // PostgreSQL adapter provider
   create: async ({ model, data }: { model: string; data: any }) => {
     const table = getTable(model);
     const [result] = await db.insert(table).values(data).returning();
@@ -125,6 +126,7 @@ function getConditions(table: any, filters: any[]) {
 // Initializing BetterAuth with Custom Adapter, bcrypt Hashing, and JWT/Refresh Expiries
 export const auth = betterAuth({
   database: customDrizzleAdapter,
+  passwordHasher: 'bcrypt', // Custom password hasher setting
   session: {
     // 7-day expiry for access (session) token
     expiresIn: 60 * 60 * 24 * 7,
@@ -152,6 +154,7 @@ export const auth = betterAuth({
     },
   },
 });
+
 
 // Retrieves the authenticated user from the Request
 export async function getCurrentUser(request: Request): Promise<User | null> {

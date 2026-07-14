@@ -30,3 +30,14 @@ export type {
   ExportBorderEvent,
   NewExportBorderEvent,
 } from '../db/schema';
+
+export interface ApiResponse<T> {
+  success: boolean;
+  data?: T;
+  error?: {
+    code: string;
+    message: string;
+    details?: Record<string, string[]>;
+  };
+}
+

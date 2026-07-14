@@ -1,4 +1,4 @@
-import { logger } from './logger';
+import { warn, error } from './logger';
 
 export class AppError extends Error {
   constructor(
@@ -19,14 +19,14 @@ export class NotFoundError extends AppError {
 }
 
 export class UnauthorizedError extends AppError {
-  constructor(message: string = 'Unauthorized access') {
-    super(401, 'UNAUTHORIZED', message);
+  constructor(message?: string) {
+    super(401, 'UNAUTHORIZED', message || 'Unauthorized access');
   }
 }
 
 export class ForbiddenError extends AppError {
-  constructor(message: string = 'Forbidden access') {
-    super(403, 'FORBIDDEN', message);
+  constructor(message?: string) {
+    super(403, 'FORBIDDEN', message || 'Forbidden access');
   }
 }
 
@@ -42,32 +42,32 @@ export class ConflictError extends AppError {
   }
 }
 
-export function handleApiError(error: unknown): Response {
-  if (error instanceof AppError) {
+export function handleApiError(err: unknown): Response {
+  if (err instanceof AppError) {
     const body: Record<string, any> = {
       success: false,
       error: {
-        code: error.code,
-        message: error.message,
+        code: err.code,
+        message: err.message,
       },
     };
 
-    if (error instanceof ValidationError) {
-      body.error.details = error.errors;
+    if (err instanceof ValidationError) {
+      body.error.details = err.errors;
     }
 
-    logger.warn(`API Error: ${error.message}`, {
-      code: error.code,
-      statusCode: error.statusCode,
-      ...(error instanceof ValidationError ? { validationErrors: error.errors } : {}),
+    warn(`API Error: ${err.message}`, {
+      code: err.code,
+      statusCode: err.statusCode,
+      ...(err instanceof ValidationError ? { validationErrors: err.errors } : {}),
     });
 
-    return Response.json(body, { status: error.statusCode });
+    return Response.json(body, { status: err.statusCode });
   }
 
   // Handle standard JS errors or unexpected exceptions
-  const message = error instanceof Error ? error.message : 'Internal Server Error';
-  logger.error(`Unexpected API Error: ${message}`, error);
+  const message = err instanceof Error ? err.message : 'Internal Server Error';
+  error(`Unexpected API Error: ${message}`, err);
 
   return Response.json(
     {
@@ -80,3 +80,4 @@ export function handleApiError(error: unknown): Response {
     { status: 500 }
   );
 }
+

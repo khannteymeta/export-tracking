@@ -75,6 +75,8 @@ export const users = pgTable('users', {
   image: text('image'),
   role: text('role').default('user').notNull(),
   permissions: jsonb('permissions'),
+  isActive: boolean('is_active').default(true).notNull(),
+  mustChangePassword: boolean('must_change_password').default(false).notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });

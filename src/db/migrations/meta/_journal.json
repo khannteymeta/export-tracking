@@ -15,6 +15,13 @@
       "when": 1783991350884,
       "tag": "0001_small_starjammers",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1784034332318,
+      "tag": "0002_sloppy_vengeance",
+      "breakpoints": true
     }
   ]
 }

@@ -4,10 +4,12 @@ import { auth } from './lib/auth';
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // 1. Skip protection for public/webhook and auth API routes
+  // 1. Skip protection for public/webhook and auth API routes (/api/auth/* and /api/webhook/*)
   if (
-    pathname.startsWith('/api/auth') || 
-    pathname.startsWith('/api/webhook')
+    pathname.startsWith('/api/auth/') || 
+    pathname === '/api/auth' ||
+    pathname.startsWith('/api/webhook/') ||
+    pathname === '/api/webhook'
   ) {
     return NextResponse.next();
   }
@@ -20,8 +22,8 @@ export async function middleware(request: NextRequest) {
   const isAuthenticated = !!session;
 
   // 3. Route guarding logic
-  // Protect routes under /dashboard/*
-  if (pathname.startsWith('/dashboard')) {
+  // Protect routes under /dashboard and /dashboard/*
+  if (pathname === '/dashboard' || pathname.startsWith('/dashboard/')) {
     if (!isAuthenticated) {
       const loginUrl = new URL('/login', request.url);
       // Optional: forward the next path destination
@@ -43,9 +45,11 @@ export async function middleware(request: NextRequest) {
 export const config = {
   runtime: 'nodejs', // Required for BetterAuth direct API database calls
   matcher: [
+    '/dashboard',
     '/dashboard/:path*',
     '/login',
     '/api/auth/:path*',
     '/api/webhook/:path*',
   ],
 };
+
