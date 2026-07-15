@@ -1,9 +1,8 @@
 import { ExportGeofenceService } from '@/server/services/exportGeofenceService';
 import { getCurrentUser, validateAdmin } from '@/lib/auth';
-import { UnauthorizedError, ForbiddenError, handleApiError, ValidationError } from '@/lib/errors';
+import { UnauthorizedError, ForbiddenError, handleApiError, ValidationError, NotFoundError } from '@/lib/errors';
 import { db } from '@/lib/db';
 import { auditLogs } from '@/db/schema';
-import { eq } from 'drizzle-orm';
 import type { ApiResponse } from '@/types';
 
 // PATCH /api/export-geofences/[id] - Update geofence details (Admin only)

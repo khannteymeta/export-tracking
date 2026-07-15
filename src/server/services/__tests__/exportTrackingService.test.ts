@@ -2,7 +2,6 @@ import { vi, describe, it, expect, beforeEach } from 'vitest';
 import { ExportTrackingService } from '@/server/services/exportTrackingService';
 import { db } from '@/lib/db';
 import { NotFoundError, ForbiddenError, ConflictError, ValidationError } from '@/lib/errors';
-import { shipmentExports, trackers, trackerEvents, exportBorderEvents, customerTelegramChats, telegramChats, auditLogs } from '@/db/schema';
 import { TrackerService } from '@/server/services/trackerService';
 import { ExportGeofenceService } from '@/server/services/exportGeofenceService';
 import { TelegramService } from '@/server/services/telegramService';
@@ -51,6 +50,15 @@ vi.mock('@/lib/db', () => {
       select: vi.fn(),
       insert: vi.fn(),
       update: vi.fn(),
+    },
+  };
+});
+
+// Mock settingsService
+vi.mock('@/server/services/settingsService', () => {
+  return {
+    SettingsService: {
+      getSetting: vi.fn().mockResolvedValue('3'), // default EXPORT_EXIT_DEBOUNCE_PINGS
     },
   };
 });

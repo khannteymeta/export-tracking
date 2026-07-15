@@ -1,8 +1,8 @@
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 import { CustomerService } from '@/server/services/customerService';
 import { db } from '@/lib/db';
-import { NotFoundError, ForbiddenError, ConflictError, ValidationError } from '@/lib/errors';
-import { customers, telegramChats, customerTelegramChats, shipmentExports, type User } from '@/db/schema';
+import { NotFoundError, ForbiddenError, ConflictError } from '@/lib/errors';
+import { type User } from '@/db/schema';
 
 // Helper to create a chainable mock for Drizzle ORM
 const makeChainableMock = (finalValue?: any) => {

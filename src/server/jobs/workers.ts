@@ -123,7 +123,7 @@ export function initMessageWorker() {
       }
       throw new Error(`Unknown job type: ${job.name}`);
     },
-    { connection: redisConnection }
+    { connection: redisConnection as any }
   );
 
   registerWorkerLogger(messageWorker);
@@ -208,7 +208,7 @@ export function initSyncWorker() {
       };
     },
     {
-      connection: redisConnection,
+      connection: redisConnection as any,
       concurrency: 1, // Concurrency 1 to run sequentially and avoid database race conditions
     }
   );

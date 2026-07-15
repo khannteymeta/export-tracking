@@ -110,7 +110,6 @@ bot.on('my_chat_member', async (ctx) => {
             lastName,
             title,
             type: chat.type,
-            updatedAt: new Date(),
           })
           .where(eq(telegramChats.chatId, chatIdBigInt));
       } else {
@@ -142,7 +141,7 @@ bot.on('my_chat_member', async (ctx) => {
       // Bot was removed or kicked
       await db
         .update(telegramChats)
-        .set({ isActive: false, updatedAt: new Date() })
+        .set({ isActive: false })
         .where(eq(telegramChats.chatId, chatIdBigInt));
 
       // Log bot removed event to audit logs

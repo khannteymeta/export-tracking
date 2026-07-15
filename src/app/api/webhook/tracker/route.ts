@@ -4,8 +4,6 @@ import { db } from '@/lib/db';
 import { webhookLogs } from '@/db/schema';
 import { logger } from '@/lib/logger';
 import { redisConnection } from '@/server/jobs/queues';
-import { z } from 'zod';
-
 const secret = process.env.WEBHOOK_SECRET || 'tracker-webhook-secret-key-development';
 
 // In-memory set to deduplicate events received in the last 5 seconds

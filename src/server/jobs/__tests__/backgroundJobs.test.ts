@@ -58,6 +58,40 @@ vi.mock('@/lib/db', () => {
   };
 });
 
+// Mock the settingsService dependency
+vi.mock('@/server/services/settingsService', () => {
+  return {
+    SettingsService: {
+      getSetting: vi.fn().mockImplementation(async (key: string) => {
+        if (key === 'EXPORT_EXIT_DEBOUNCE_PINGS') return '3';
+        if (key === 'EXPORT_SIGNAL_LOSS_HOURS') return '6';
+        if (key === 'MAX_RETRIES') return '3';
+        if (key === 'INITIAL_DELAY_MS') return '1000';
+        if (key === 'BACKOFF_MULTIPLIER') return '2.0';
+        return null;
+      }),
+      getAllSettings: vi.fn().mockResolvedValue({}),
+      updateSetting: vi.fn().mockResolvedValue(undefined),
+      validateBotToken: vi.fn().mockResolvedValue(true),
+      resetToDefaults: vi.fn().mockResolvedValue(undefined),
+    },
+    DEFAULT_SETTINGS: {
+      DEFAULT_BOT_TOKEN: '123456789:ABCdefGhIJKlmNoPQRsTUVwxyZ',
+      BOT_WEBHOOK_URL: '',
+      MAX_RETRIES: '3',
+      INITIAL_DELAY_MS: '1000',
+      MAX_DELAY_MS: '60000',
+      BACKOFF_MULTIPLIER: '2.0',
+      WEBHOOK_EVENTS_PER_MIN: '1000',
+      API_CALLS_PER_MIN: '10000',
+      MESSAGES_PER_MIN: '1000',
+      EXPORT_EXIT_DEBOUNCE_PINGS: '3',
+      EXPORT_SIGNAL_LOSS_HOURS: '6',
+      EXPORT_OPS_CHAT_IDS: '',
+    },
+  };
+});
+
 // Mock service dependencies
 vi.mock('@/server/services/telegramService', () => {
   return {
@@ -137,7 +171,7 @@ describe('Background Processing Unit Tests', () => {
   });
 
   describe('Queue Enqueue dispatches', () => {
-    it('should add standard alert with LIFO options if priority is high', async () => {
+    it('should add alert successfully', async () => {
       const spyAdd = vi.spyOn(messageQueue, 'add');
       await enqueueMessage(VALID_SHIPMENT_ID, 'confirmed', 'high');
       expect(spyAdd).toHaveBeenCalledWith('send', { shipmentExportId: VALID_SHIPMENT_ID, alertType: 'confirmed' }, { lifo: true });

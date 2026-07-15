@@ -10,7 +10,7 @@ import {
   type User,
 } from '@/db/schema';
 import { eq, and, ne, desc, inArray, or } from 'drizzle-orm';
-import { NotFoundError, ForbiddenError, ConflictError, ValidationError } from '@/lib/errors';
+import { NotFoundError, ConflictError, ValidationError } from '@/lib/errors';
 import {
   validateInput,
   createShipmentExportSchema,
@@ -19,6 +19,7 @@ import {
 import { TrackerService } from './trackerService';
 import { ExportGeofenceService } from './exportGeofenceService';
 import { TelegramService } from './telegramService';
+import { SettingsService } from './settingsService';
 
 /**
  * Hook to settle billing/monitoring fees and reduce tracker ping rate.
@@ -251,15 +252,18 @@ export const ExportTrackingService = {
         // Notify Ops/Admin chats
         await TelegramService.sendExportAlert(shipment.id, 'crossed_boundary');
       } else if (shipment.status === 'exited_pending_confirmation') {
-        // Debounce logic: check if the last 3 consecutive pings are all outside the boundary
+        // Debounce logic: check if consecutive pings are all outside the boundary
+        const debouncePingsSetting = await SettingsService.getSetting('EXPORT_EXIT_DEBOUNCE_PINGS');
+        const debounceLimit = debouncePingsSetting ? parseInt(debouncePingsSetting, 10) : 3;
+
         const lastThreePings = await db
           .select()
           .from(trackerEvents)
           .where(eq(trackerEvents.trackerId, trackerId))
           .orderBy(desc(trackerEvents.recordedAt))
-          .limit(3);
+          .limit(debounceLimit);
 
-        if (lastThreePings.length >= 3) {
+        if (lastThreePings.length >= debounceLimit) {
           const allOutside = lastThreePings.every(
             (ping) => !ExportGeofenceService.isPointInGeofence(ping.lat, ping.lng, borderGeofence)
           );

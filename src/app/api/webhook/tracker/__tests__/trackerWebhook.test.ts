@@ -1,6 +1,5 @@
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 import { POST } from '@/app/api/webhook/tracker/route';
-import { TrackerHandler } from '@/server/webhooks/trackerHandler';
 import { TrackerService } from '@/server/services/trackerService';
 import { db } from '@/lib/db';
 import { redisConnection, exportGeofenceQueue, messageQueue } from '@/server/jobs/queues';

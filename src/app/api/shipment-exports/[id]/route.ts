@@ -2,8 +2,8 @@ import { ExportTrackingService } from '@/server/services/exportTrackingService';
 import { getCurrentUser } from '@/lib/auth';
 import { UnauthorizedError, ForbiddenError, handleApiError } from '@/lib/errors';
 import { db } from '@/lib/db';
-import { shipmentExports, customerTelegramChats, telegramChats } from '@/db/schema';
-import { eq, and, inArray } from 'drizzle-orm';
+import { shipmentExports } from '@/db/schema';
+import { eq, and } from 'drizzle-orm';
 import type { ApiResponse } from '@/types';
 
 /**

@@ -13,8 +13,8 @@ export const redisConnection = new Redis(redisUrl, {
   maxRetriesPerRequest: null,
 });
 
-export const importQueue = new Queue('customer-import', { connection: redisConnection });
-export const importQueueEvents = new QueueEvents('customer-import', { connection: redisConnection });
+export const importQueue = new Queue('customer-import', { connection: redisConnection as any });
+export const importQueueEvents = new QueueEvents('customer-import', { connection: redisConnection as any });
 
 let worker: Worker | null = null;
 
@@ -119,7 +119,7 @@ export function initImportWorker() {
           const fieldErrors = validation.error.flatten().fieldErrors;
           const errorMsgs: string[] = [];
           for (const key in fieldErrors) {
-            errorMsgs.push(`${key}: ${fieldErrors[key]?.join(', ')}`);
+            errorMsgs.push(`${key}: ${(fieldErrors as any)[key]?.join(', ')}`);
           }
           errors.push({ row: rowNumber, errors: errorMsgs });
           failed++;
@@ -201,7 +201,7 @@ export function initImportWorker() {
         errors,
       };
     },
-    { connection: redisConnection }
+    { connection: redisConnection as any }
   );
 
   worker.on('failed', (job, err) => {

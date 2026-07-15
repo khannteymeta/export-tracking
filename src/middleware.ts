@@ -22,8 +22,13 @@ export async function middleware(request: NextRequest) {
   const isAuthenticated = !!session;
 
   // 3. Route guarding logic
-  // Protect routes under /dashboard and /dashboard/*
-  if (pathname === '/dashboard' || pathname.startsWith('/dashboard/')) {
+  // Protect routes under /dashboard and /export-tracking
+  if (
+    pathname === '/dashboard' || 
+    pathname.startsWith('/dashboard/') ||
+    pathname === '/export-tracking' ||
+    pathname.startsWith('/export-tracking/')
+  ) {
     if (!isAuthenticated) {
       const loginUrl = new URL('/login', request.url);
       // Optional: forward the next path destination
@@ -47,6 +52,8 @@ export const config = {
   matcher: [
     '/dashboard',
     '/dashboard/:path*',
+    '/export-tracking',
+    '/export-tracking/:path*',
     '/login',
     '/api/auth/:path*',
     '/api/webhook/:path*',

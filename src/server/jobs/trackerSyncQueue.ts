@@ -10,8 +10,8 @@ export const redisConnection = new Redis(redisUrl, {
   maxRetriesPerRequest: null,
 });
 
-export const trackerSyncQueue = new Queue('tracker-sync', { connection: redisConnection });
-export const trackerSyncQueueEvents = new QueueEvents('tracker-sync', { connection: redisConnection });
+export const trackerSyncQueue = new Queue('tracker-sync', { connection: redisConnection as any });
+export const trackerSyncQueueEvents = new QueueEvents('tracker-sync', { connection: redisConnection as any });
 
 let worker: Worker | null = null;
 
@@ -117,7 +117,7 @@ export function initTrackerSyncWorker() {
         updated,
       };
     },
-    { connection: redisConnection }
+    { connection: redisConnection as any }
   );
 
   worker.on('failed', (job, err) => {

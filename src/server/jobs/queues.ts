@@ -21,30 +21,30 @@ export const defaultJobOptions = {
 
 // Define queues
 export const messageQueue = new Queue('message-delivery', {
-  connection: redisConnection,
+  connection: redisConnection as any,
   defaultJobOptions,
 });
 
 export const syncQueue = new Queue('tracker-sync', {
-  connection: redisConnection,
+  connection: redisConnection as any,
   defaultJobOptions,
 });
 
 export const exportGeofenceQueue = new Queue('export-geofence-check', {
-  connection: redisConnection,
+  connection: redisConnection as any,
   defaultJobOptions,
 });
 
 export const cleanupQueue = new Queue('cleanup-logs', {
-  connection: redisConnection,
+  connection: redisConnection as any,
   defaultJobOptions,
 });
 
 // Define matching QueueEvents for completion/error hook listeners
-export const messageQueueEvents = new QueueEvents('message-delivery', { connection: redisConnection });
-export const syncQueueEvents = new QueueEvents('tracker-sync', { connection: redisConnection });
-export const exportGeofenceQueueEvents = new QueueEvents('export-geofence-check', { connection: redisConnection });
-export const cleanupQueueEvents = new QueueEvents('cleanup-logs', { connection: redisConnection });
+export const messageQueueEvents = new QueueEvents('message-delivery', { connection: redisConnection as any });
+export const syncQueueEvents = new QueueEvents('tracker-sync', { connection: redisConnection as any });
+export const exportGeofenceQueueEvents = new QueueEvents('export-geofence-check', { connection: redisConnection as any });
+export const cleanupQueueEvents = new QueueEvents('cleanup-logs', { connection: redisConnection as any });
 
 // ============================================================================
 // QUEUE MANAGEMENT OPERATIONS

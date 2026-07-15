@@ -1,7 +1,6 @@
 import { bot } from '@/lib/telegram';
 import { db } from '@/lib/db';
 import {
-  systemSettings,
   shipmentExports,
   trackers,
   customers,
@@ -13,6 +12,7 @@ import { eq, and, sql } from 'drizzle-orm';
 import { NotFoundError } from '@/lib/errors';
 import { logger } from '@/lib/logger';
 import { TemplateService } from './templateService';
+import { SettingsService } from './settingsService';
 
 export const TelegramService = {
   /**
@@ -40,21 +40,22 @@ export const TelegramService = {
     message: string,
     retries = 3
   ): Promise<{ success: boolean; attempts: number }> {
-    // Retrieve custom retry count setting if configured
+    // Retrieve custom retry count and backoff delay settings if configured
     let maxRetries = retries;
-    try {
-      const setting = await db
-        .select({ value: systemSettings.value })
-        .from(systemSettings)
-        .where(eq(systemSettings.key, 'telegram_max_retries'))
-        .limit(1)
-        .then((res) => res[0]);
+    let initialDelay = 1000;
+    let backoffMultiplier = 2.0;
 
-      if (setting?.value) {
-        maxRetries = parseInt(setting.value, 10);
-      }
+    try {
+      const maxRetriesStr = await SettingsService.getSetting('MAX_RETRIES');
+      if (maxRetriesStr) maxRetries = parseInt(maxRetriesStr, 10);
+      
+      const initialDelayStr = await SettingsService.getSetting('INITIAL_DELAY_MS');
+      if (initialDelayStr) initialDelay = parseInt(initialDelayStr, 10);
+
+      const multiplierStr = await SettingsService.getSetting('BACKOFF_MULTIPLIER');
+      if (multiplierStr) backoffMultiplier = parseFloat(multiplierStr);
     } catch (err: any) {
-      logger.warn(`[TelegramService] Failed to load max retries setting, falling back to ${retries}: ${err.message}`);
+      logger.warn(`[TelegramService] Failed to load retry settings: ${err.message}`);
     }
 
     let success = false;
@@ -67,8 +68,8 @@ export const TelegramService = {
       success = await this.sendMessage(chatId, message);
 
       if (!success && attempts < maxRetries) {
-        // Calculate backoff: 1000 * 2^attempt milliseconds
-        const delay = 1000 * Math.pow(2, attempts);
+        // Calculate backoff: initialDelay * backoffMultiplier^(attempt-1) milliseconds
+        const delay = initialDelay * Math.pow(backoffMultiplier, attempts - 1);
         logger.info(`[TelegramService] Backing off for ${delay}ms before next retry...`);
         await new Promise((resolve) => setTimeout(resolve, delay));
       }
@@ -248,6 +249,35 @@ export const TelegramService = {
             sql`${customerTelegramChats.id} is null`
           )
         );
+    }
+
+    // Append any extra ops chats from Settings (for boundary-crossings/exceptions)
+    if (alertType === 'crossed_boundary' || alertType === 're_entered' || alertType === 'exception') {
+      try {
+        const opsChatIdsSetting = await SettingsService.getSetting('EXPORT_OPS_CHAT_IDS');
+        if (opsChatIdsSetting) {
+          const extraChatIds = opsChatIdsSetting
+            .split(',')
+            .map((id) => id.trim())
+            .filter(Boolean)
+            .map((id) => {
+              try {
+                return BigInt(id);
+              } catch {
+                return null;
+              }
+            })
+            .filter((id): id is bigint => id !== null);
+
+          for (const chatId of extraChatIds) {
+            if (!chats.some((c) => c.chatId === chatId)) {
+              chats.push({ chatId });
+            }
+          }
+        }
+      } catch (err: any) {
+        logger.warn(`[TelegramService] Failed to load EXPORT_OPS_CHAT_IDS setting: ${err.message}`);
+      }
     }
 
     for (const chat of chats) {

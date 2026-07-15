@@ -9,8 +9,8 @@ export const redisConnection = new Redis(redisUrl, {
   maxRetriesPerRequest: null,
 });
 
-export const exportGeofenceQueue = new Queue('export-geofence-check', { connection: redisConnection });
-export const exportGeofenceQueueEvents = new QueueEvents('export-geofence-check', { connection: redisConnection });
+export const exportGeofenceQueue = new Queue('export-geofence-check', { connection: redisConnection as any });
+export const exportGeofenceQueueEvents = new QueueEvents('export-geofence-check', { connection: redisConnection as any });
 
 let worker: Worker | null = null;
 
@@ -24,7 +24,7 @@ export function initExportGeofenceWorker() {
       logger.info(`[ExportGeofenceWorker] Running geofence evaluation for tracker ${trackerId} at (${lat}, ${lng})`);
       await ExportTrackingService.evaluatePosition(trackerId, lat, lng, new Date(recordedAt));
     },
-    { connection: redisConnection }
+    { connection: redisConnection as any }
   );
 
   worker.on('failed', (job, err) => {

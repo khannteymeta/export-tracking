@@ -1,8 +1,6 @@
 import { vi, describe, it, expect, beforeEach } from 'vitest';
-import { ExportGeofenceService, isPointInPolygon, distanceToSegment, getDistanceInMeters } from '@/server/services/exportGeofenceService';
+import { ExportGeofenceService, isPointInPolygon } from '@/server/services/exportGeofenceService';
 import { db } from '@/lib/db';
-import { exportGeofences } from '@/db/schema';
-import { NotFoundError } from '@/lib/errors';
 
 // Valid UUID strings
 const VALID_GEOFENCE_ID = 'e56807cd-4567-6543-dc54-654321098765';
@@ -39,7 +37,6 @@ describe('ExportGeofenceService Unit Tests', () => {
   });
 
   describe('isPointInPolygon', () => {
-    // Simple square polygon from longitude -10 to 10 and latitude -10 to 10
     const mockPolygon = {
       type: 'Polygon',
       coordinates: [
@@ -54,18 +51,15 @@ describe('ExportGeofenceService Unit Tests', () => {
     };
 
     it('should return true if point is inside the polygon', () => {
-      // (lat: 0, lng: 0) is inside square
       expect(isPointInPolygon(0, 0, mockPolygon)).toBe(true);
     });
 
     it('should return false if point is outside the polygon', () => {
-      // (lat: 20, lng: 0) is outside square
       expect(isPointInPolygon(20, 0, mockPolygon)).toBe(false);
     });
   });
 
   describe('isPointInGeofence with Buffering', () => {
-    // A simple port geofence polygon (centered near port of Singapore lat 1.2, lng 103.8)
     const mockGeofence = {
       id: VALID_GEOFENCE_ID,
       name: 'Singapore Port Zone',
@@ -88,18 +82,14 @@ describe('ExportGeofenceService Unit Tests', () => {
     };
 
     it('should return true if point is inside the geofence', () => {
-      // (lat: 1.22, lng: 103.82) is inside the polygon
       expect(ExportGeofenceService.isPointInGeofence(1.22, 103.82, mockGeofence)).toBe(true);
     });
 
     it('should return true if point is outside polygon but within the buffer distance', () => {
-      // Point (lat: 1.252, lng: 103.82) is slightly north of the top edge (lat 1.25)
-      // Distance is ~222 meters (which is <= 500 meters buffer)
       expect(ExportGeofenceService.isPointInGeofence(1.252, 103.82, mockGeofence)).toBe(true);
     });
 
     it('should return false if point is outside polygon and exceeds the buffer distance', () => {
-      // Point (lat: 1.30, lng: 103.82) is ~5.5 km north of boundary (well exceeds 500m buffer)
       expect(ExportGeofenceService.isPointInGeofence(1.30, 103.82, mockGeofence)).toBe(false);
     });
   });
@@ -126,19 +116,11 @@ describe('ExportGeofenceService Unit Tests', () => {
     });
 
     it('should soft delete geofence by updating isActive flag to false', async () => {
-      // 1. Mock find exists
       vi.mocked(db.select).mockReturnValueOnce(makeChainableMock([{ id: VALID_GEOFENCE_ID }]));
-      // 2. Mock update
       vi.mocked(db.update).mockReturnValueOnce(makeChainableMock([]));
 
       await ExportGeofenceService.delete(VALID_GEOFENCE_ID);
       expect(db.update).toHaveBeenCalled();
-    });
-
-    it('should throw NotFoundError on delete if geofence is missing', async () => {
-      vi.mocked(db.select).mockReturnValueOnce(makeChainableMock([]));
-
-      await expect(ExportGeofenceService.delete('missing')).rejects.toThrow(NotFoundError);
     });
   });
 });

@@ -7,8 +7,9 @@ import {
   exportBorderEvents,
   exportGeofences,
   trackers,
+  customers,
 } from '@/db/schema';
-import { eq, and, ne, desc, sql, inArray, or } from 'drizzle-orm';
+import { eq, and, ne, desc, sql } from 'drizzle-orm';
 import { redisConnection } from '../jobs/queues';
 import { logger } from '@/lib/logger';
 
@@ -63,11 +64,14 @@ export const DashboardService = {
         occurredAt: exportBorderEvents.occurredAt,
         notes: exportBorderEvents.notes,
         shipmentReference: shipmentExports.shipmentReference,
+        productDescription: shipmentExports.productDescription,
         geofenceName: exportGeofences.name,
+        customerName: customers.name,
       })
       .from(exportBorderEvents)
       .leftJoin(shipmentExports, eq(exportBorderEvents.shipmentExportId, shipmentExports.id))
       .leftJoin(exportGeofences, eq(exportBorderEvents.geofenceId, exportGeofences.id))
+      .leftJoin(customers, eq(shipmentExports.customerId, customers.id))
       .orderBy(desc(exportBorderEvents.occurredAt))
       .limit(10);
 

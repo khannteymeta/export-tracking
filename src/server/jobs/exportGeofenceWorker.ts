@@ -6,13 +6,24 @@ import { eq, and, inArray, or, sql } from 'drizzle-orm';
 import { logger } from '@/lib/logger';
 import { ExportTrackingService } from '../services/exportTrackingService';
 import { registerWorkerLogger } from './workers';
+import { SettingsService } from '../services/settingsService';
 
 /**
  * Sweeps active shipments to detect and flag signal loss exceptions.
  * Identifies shipments where no tracker ping has been recorded in the last 24 hours.
  */
 async function runSignalLossCheck(): Promise<number> {
-  const thresholdDate = new Date(Date.now() - 24 * 60 * 60 * 1000); // 24 hours ago
+  let hours = 24;
+  try {
+    const setting = await SettingsService.getSetting('EXPORT_SIGNAL_LOSS_HOURS');
+    if (setting) {
+      hours = parseInt(setting, 10);
+    }
+  } catch (err: any) {
+    logger.warn(`[SignalLossCheck] Failed to load EXPORT_SIGNAL_LOSS_HOURS: ${err.message}`);
+  }
+
+  const thresholdDate = new Date(Date.now() - hours * 60 * 60 * 1000);
   
   const signalLossShipments = await db
     .select({ id: shipmentExports.id })
@@ -91,7 +102,7 @@ export function initExportGeofenceWorker() {
       }
       throw new Error(`Unknown job type: ${job.name}`);
     },
-    { connection: redisConnection }
+    { connection: redisConnection as any }
   );
 
   registerWorkerLogger(exportGeofenceWorker);

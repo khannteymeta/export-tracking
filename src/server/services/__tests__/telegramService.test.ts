@@ -34,6 +34,20 @@ vi.mock('@/lib/db', () => {
   };
 });
 
+// Mock settingsService
+vi.mock('@/server/services/settingsService', () => {
+  return {
+    SettingsService: {
+      getSetting: vi.fn().mockImplementation(async (key: string) => {
+        if (key === 'MAX_RETRIES') return '3';
+        if (key === 'INITIAL_DELAY_MS') return '1000';
+        if (key === 'BACKOFF_MULTIPLIER') return '2.0';
+        return null;
+      }),
+    },
+  };
+});
+
 // Mock Grammy bot from @/lib/telegram
 vi.mock('@/lib/telegram', () => {
   return {
@@ -70,8 +84,6 @@ describe('TelegramService Unit Tests', () => {
 
   describe('sendWithRetry', () => {
     it('should send immediately if first attempt succeeds', async () => {
-      // Mock db max retries query (returns empty list -> defaults to 3)
-      vi.mocked(db.select).mockReturnValueOnce(makeChainableMock([]));
       // Mock successful message send
       vi.mocked(bot.api.sendMessage).mockResolvedValue({} as any);
 
@@ -82,8 +94,12 @@ describe('TelegramService Unit Tests', () => {
     });
 
     it('should retry up to maxRetries on failures', async () => {
-      // Mock db max retries query (returns custom setting: 2)
-      vi.mocked(db.select).mockReturnValueOnce(makeChainableMock([{ value: '2' }]));
+      // Mock settings service settings
+      const { SettingsService } = await import('@/server/services/settingsService');
+      vi.mocked(SettingsService.getSetting).mockResolvedValueOnce('2'); // MAX_RETRIES
+      vi.mocked(SettingsService.getSetting).mockResolvedValueOnce('1000'); // INITIAL_DELAY_MS
+      vi.mocked(SettingsService.getSetting).mockResolvedValueOnce('2.0'); // BACKOFF_MULTIPLIER
+
       // Mock bot failures
       vi.mocked(bot.api.sendMessage).mockRejectedValue(new Error('Failed'));
 
@@ -117,8 +133,6 @@ describe('TelegramService Unit Tests', () => {
       vi.mocked(db.select).mockReturnValueOnce(makeChainableMock([mockTemplate]));
       // 5. Customer telegram chats query
       vi.mocked(db.select).mockReturnValueOnce(makeChainableMock([{ chatId: 112233n }]));
-      // 6. Max retries query (inside sendWithRetry)
-      vi.mocked(db.select).mockReturnValueOnce(makeChainableMock([]));
 
       vi.mocked(bot.api.sendMessage).mockResolvedValue({} as any);
 
@@ -140,8 +154,6 @@ describe('TelegramService Unit Tests', () => {
       vi.mocked(db.select).mockReturnValueOnce(makeChainableMock([mockShipment]));
       // 2. Fetch customer chats
       vi.mocked(db.select).mockReturnValueOnce(makeChainableMock([{ chatId: 556677n }]));
-      // 3. Max retries setting check (inside sendWithRetry)
-      vi.mocked(db.select).mockReturnValueOnce(makeChainableMock([]));
 
       vi.mocked(bot.api.sendMessage).mockResolvedValue({} as any);
 
@@ -161,8 +173,6 @@ describe('TelegramService Unit Tests', () => {
       vi.mocked(db.select).mockReturnValueOnce(makeChainableMock([mockShipment]));
       // 2. Fetch ops chats (active, left join customer chats null check)
       vi.mocked(db.select).mockReturnValueOnce(makeChainableMock([{ chatId: 998877n }]));
-      // 3. Max retries check (inside sendWithRetry)
-      vi.mocked(db.select).mockReturnValueOnce(makeChainableMock([]));
 
       vi.mocked(bot.api.sendMessage).mockResolvedValue({} as any);
 

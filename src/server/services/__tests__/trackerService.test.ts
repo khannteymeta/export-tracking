@@ -2,7 +2,6 @@ import { vi, describe, it, expect, beforeEach } from 'vitest';
 import { TrackerService } from '@/server/services/trackerService';
 import { db } from '@/lib/db';
 import { NotFoundError, ForbiddenError, ConflictError, ValidationError } from '@/lib/errors';
-import { trackers, customerTelegramChats, shipmentExports, trackerEvents, trackerStatusHistory } from '@/db/schema';
 import { ExportTrackingService } from '@/server/services/exportTrackingService';
 
 // Valid UUID strings for schema validations

@@ -9,8 +9,8 @@ export const redisConnection = new Redis(redisUrl, {
   maxRetriesPerRequest: null,
 });
 
-export const messageQueue = new Queue('message-delivery', { connection: redisConnection });
-export const messageQueueEvents = new QueueEvents('message-delivery', { connection: redisConnection });
+export const messageQueue = new Queue('message-delivery', { connection: redisConnection as any });
+export const messageQueueEvents = new QueueEvents('message-delivery', { connection: redisConnection as any });
 
 let worker: Worker | null = null;
 
@@ -24,7 +24,7 @@ export function initMessageWorker() {
       logger.info(`[MessageWorker] Dispatching rendered template alert ${templateId} for shipment ${shipmentExportId}`);
       await TelegramService.renderAndSend(templateId, shipmentExportId);
     },
-    { connection: redisConnection }
+    { connection: redisConnection as any }
   );
 
   worker.on('failed', (job, err) => {
