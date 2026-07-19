@@ -3,6 +3,7 @@ import { users, sessions, accounts, verifications, type User } from '../db/schem
 import { eq, and, ne, lt, lte, gt, gte, inArray, like, desc, asc, count } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
 import { betterAuth } from 'better-auth';
+import crypto from 'crypto';
 
 // Custom Drizzle-backed database adapter for BetterAuth to manage tables directly
 const customDrizzleAdapter = {
@@ -10,16 +11,37 @@ const customDrizzleAdapter = {
   provider: 'postgres', // PostgreSQL adapter provider
   create: async ({ model, data }: { model: string; data: any }) => {
     const table = getTable(model);
+    if (!data.id) {
+      data.id = crypto.randomUUID();
+    }
     const [result] = await db.insert(table).values(data).returning();
     return result;
   },
-  findOne: async ({ model, where }: { model: string; where: any[] }) => {
+  findOne: async ({ model, where, join }: { model: string; where: any[]; join?: any }) => {
     const table = getTable(model);
     const conditions = getConditions(table, where);
     const [result] = await db.select().from(table).where(and(...conditions)).limit(1);
+    
+    if (result && join) {
+      if (model === 'user' && join.account) {
+        const userAccounts = await db
+          .select()
+          .from(accounts)
+          .where(eq(accounts.userId, result.id));
+        (result as any).account = userAccounts;
+      }
+      if (model === 'session' && join.user) {
+        const [sessionUser] = await db
+          .select()
+          .from(users)
+          .where(eq(users.id, result.userId))
+          .limit(1);
+        (result as any).user = sessionUser || null;
+      }
+    }
     return result || null;
   },
-  findMany: async ({ model, where, limit, offset, sortBy }: { model: string; where?: any[]; limit?: number; offset?: number; sortBy?: any }) => {
+  findMany: async ({ model, where, limit, offset, sortBy, join }: { model: string; where?: any[]; limit?: number; offset?: number; sortBy?: any; join?: any }) => {
     const table = getTable(model);
     let query = db.select().from(table);
     if (where && where.length > 0) {
@@ -38,7 +60,30 @@ const customDrizzleAdapter = {
         query = query.orderBy(sortBy.direction === 'desc' ? desc(column) : asc(column)) as any;
       }
     }
-    return await query;
+    const results = await query;
+
+    if (results.length > 0 && join) {
+      if (model === 'session' && join.user) {
+        for (const session of results) {
+          const [sessionUser] = await db
+            .select()
+            .from(users)
+            .where(eq(users.id, session.userId))
+            .limit(1);
+          (session as any).user = sessionUser || null;
+        }
+      }
+      if (model === 'user' && join.account) {
+        for (const user of results) {
+          const userAccounts = await db
+            .select()
+            .from(accounts)
+            .where(eq(accounts.userId, user.id));
+          (user as any).account = userAccounts;
+        }
+      }
+    }
+    return results;
   },
   update: async ({ model, where, update }: { model: string; where: any[]; update: any }) => {
     const table = getTable(model);
@@ -125,7 +170,7 @@ function getConditions(table: any, filters: any[]) {
 
 // Initializing BetterAuth with Custom Adapter, bcrypt Hashing, and JWT/Refresh Expiries
 export const auth = betterAuth({
-  database: customDrizzleAdapter,
+  database: () => customDrizzleAdapter,
   passwordHasher: 'bcrypt', // Custom password hasher setting
   session: {
     // 7-day expiry for access (session) token
@@ -158,6 +203,37 @@ export const auth = betterAuth({
 
 // Retrieves the authenticated user from the Request
 export async function getCurrentUser(request: Request): Promise<User | null> {
+  const authHeader = request.headers.get('Authorization') || request.headers.get('authorization');
+  let token: string | null = null;
+  if (authHeader?.startsWith('Bearer ')) {
+    token = authHeader.substring(7);
+  }
+  if (!token) {
+    const cookieHeader = request.headers.get('Cookie') || request.headers.get('cookie') || '';
+    const match = cookieHeader.match(/better-auth\.session_token=([^;]+)/);
+    if (match) {
+      token = match[1];
+    }
+  }
+
+  if (token) {
+    const [sessionRecord] = await db
+      .select()
+      .from(sessions)
+      .where(eq(sessions.token, token))
+      .limit(1);
+    if (sessionRecord && sessionRecord.expiresAt > new Date()) {
+      const [userRecord] = await db
+        .select()
+        .from(users)
+        .where(eq(users.id, sessionRecord.userId))
+        .limit(1);
+      if (userRecord) {
+        return userRecord;
+      }
+    }
+  }
+
   const sessionRes = await auth.api.getSession({
     headers: request.headers,
   });

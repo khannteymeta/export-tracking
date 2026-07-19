@@ -51,7 +51,7 @@ export const DashboardService = {
     // 3. Query Timeframe Tracker Events Count
     let totalEventsQuery = db.select({ count: sql<number>`COALESCE(count(*), 0)` }).from(trackerEvents);
     if (timeRange) {
-      totalEventsQuery = totalEventsQuery.where(sql`${trackerEvents.recordedAt} >= ${getTimeRangeLimit(timeRange)}`) as any;
+      totalEventsQuery = totalEventsQuery.where(sql`${trackerEvents.recordedAt} >= ${getTimeRangeLimit(timeRange).toISOString()}::timestamp`) as any;
     }
     const [{ count: totalTrackerEvents }] = await totalEventsQuery;
 
@@ -100,7 +100,7 @@ export const DashboardService = {
         count: sql<number>`COALESCE(count(*), 0)`,
       })
       .from(trackerEvents)
-      .where(sql`${trackerEvents.recordedAt} >= ${sevenDaysAgo}`)
+      .where(sql`${trackerEvents.recordedAt} >= ${sevenDaysAgo.toISOString()}::timestamp`)
       .groupBy(sql`DATE(${trackerEvents.recordedAt})`)
       .orderBy(sql`DATE(${trackerEvents.recordedAt})`);
 
@@ -151,7 +151,7 @@ export const DashboardService = {
       filters.push(eq(trackers.customerId, customerId));
     }
     if (timeRange) {
-      filters.push(sql`${trackerEvents.recordedAt} >= ${getTimeRangeLimit(timeRange)}`);
+      filters.push(sql`${trackerEvents.recordedAt} >= ${getTimeRangeLimit(timeRange).toISOString()}::timestamp`);
     }
     const whereClause = filters.length > 0 ? and(...filters) : undefined;
 
@@ -253,7 +253,7 @@ export const DashboardService = {
       filters.push(eq(shipmentExports.productCategory, productCategory as any));
     }
     if (timeRange) {
-      filters.push(sql`${shipmentExports.createdAt} >= ${getTimeRangeLimit(timeRange)}`);
+      filters.push(sql`${shipmentExports.createdAt} >= ${getTimeRangeLimit(timeRange).toISOString()}::timestamp`);
     }
     const whereClause = filters.length > 0 ? and(...filters) : undefined;
 
@@ -279,7 +279,7 @@ export const DashboardService = {
       avgFilters.push(eq(shipmentExports.productCategory, productCategory as any));
     }
     if (timeRange) {
-      avgFilters.push(sql`${shipmentExports.createdAt} >= ${getTimeRangeLimit(timeRange)}`);
+      avgFilters.push(sql`${shipmentExports.createdAt} >= ${getTimeRangeLimit(timeRange).toISOString()}::timestamp`);
     }
     const [{ avgSeconds }] = await db
       .select({
@@ -304,7 +304,7 @@ export const DashboardService = {
       excFilters.push(eq(shipmentExports.productCategory, productCategory as any));
     }
     if (timeRange) {
-      excFilters.push(sql`${shipmentExports.createdAt} >= ${getTimeRangeLimit(timeRange)}`);
+      excFilters.push(sql`${shipmentExports.createdAt} >= ${getTimeRangeLimit(timeRange).toISOString()}::timestamp`);
     }
     const [{ count: exceptionCount }] = await db
       .select({ count: sql<number>`COALESCE(count(*), 0)` })
